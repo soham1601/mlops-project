@@ -1,0 +1,5 @@
+# Runtime dependencies (used by the training code and, later, the API image).
+# Versions are pinned after the full pipeline works: `uv pip freeze` (Task 4).
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5

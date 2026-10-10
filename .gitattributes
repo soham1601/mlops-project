@@ -1,0 +1,12 @@
+# Always use LF so scripts, Dockerfiles and YAML work inside Linux containers and CI.
+* text=auto eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+Makefile text eol=lf
+
+*.png binary
+*.pdf binary
+*.joblib binary
+*.pkl binary
