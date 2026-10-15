@@ -1,0 +1,15 @@
+{
+  "rows_raw": 303,
+  "missing_per_column": {
+    "ca": 4,
+    "thal": 2
+  },
+  "duplicate_rows": 0,
+  "missing_strategy": "drop",
+  "rows_clean": 297,
+  "rows_removed": 6,
+  "class_balance": {
+    "0": 160,
+    "1": 137
+  }
+}
