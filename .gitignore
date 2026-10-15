@@ -1,0 +1,4 @@
+
+# Trained model files are rebuilt by `make train`
+models/*
+!models/.gitkeep

@@ -1,0 +1,26 @@
+# Settings for the Cleveland subset (the assignment's main dataset).
+# Run:  python -m mlops_project train --config configs/cleveland.yaml
+name: cleveland
+
+data:
+  path: data/processed/heart_clean.csv   # relative to the project root
+  target: target                         # 0/1 column; the raw 0-4 'num' column also works
+  # rename: {thalch: thalach}            # map differently named columns to ours
+  # sep: ","
+
+split:
+  test_size: 0.2
+  seed: 42
+
+cv:
+  folds: 5
+
+tuning:
+  n_trials: 30        # Optuna trials per model; 0 = skip tuning
+  metric: roc_auc     # roc_auc | f1 | accuracy | precision | recall (also picks the best model)
+
+models: [logistic_regression, random_forest, xgboost]
+
+output:
+  model_path: models/model.joblib
+  report_dir: reports/training

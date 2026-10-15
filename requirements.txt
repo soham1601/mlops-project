@@ -1,0 +1,8 @@
+# Runtime dependencies (used by the training code and, later, the API image).
+# Versions are pinned after the full pipeline works: `uv pip freeze` (Task 4).
+pandas>=2.2
+numpy>=1.26
+scikit-learn>=1.5
+xgboost-cpu>=2.1  # CPU-only build (same `import xgboost`): avoids a ~300 MB NVIDIA download
+pyyaml>=6.0
+joblib>=1.3
