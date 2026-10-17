@@ -20,6 +20,9 @@ eda:  ## Generate EDA figures and summary in reports/
 train:  ## Train, tune and compare the models; saves models/ and reports/training/
 	$(PY) -m mlops_project train --config configs/cleveland.yaml
 
+experiment:  ## Compare feature sets with paired statistics; writes reports/experiments/
+	$(PY) -m mlops_project experiment --config configs/cleveland.yaml
+
 evaluate:  ## Score the saved model on a CSV: make evaluate DATA=path/to/file.csv
 	$(PY) -m mlops_project evaluate --data $(DATA)
 

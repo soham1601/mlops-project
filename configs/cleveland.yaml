@@ -24,3 +24,10 @@ models: [logistic_regression, random_forest, xgboost]
 output:
   model_path: models/model.joblib
   report_dir: reports/training
+
+experiment:           # python -m mlops_project experiment --config configs/cleveland.yaml
+  repeats: 5          # 5-fold CV repeated 5 times = 25 paired scores per variant
+  top_k: [10, 8, 6]   # keep the k most informative features (re-chosen inside every fold)
+  engineered: true    # also test the extra hr_ratio column
+  ablation: true      # also drop each of the 13 features in turn
+  output_dir: reports/experiments
