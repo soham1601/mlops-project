@@ -1,5 +1,4 @@
-"""Load any CSV from the Heart Disease family into (features, binary target).
-"""
+"""Load any CSV from the Heart Disease family into (features, binary target)."""
 
 from __future__ import annotations
 

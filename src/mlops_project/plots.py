@@ -1,5 +1,4 @@
-"""Training report figures: ROC curves, confusion matrix, permutation importance.
-"""
+"""Training report figures: ROC curves, confusion matrix, permutation importance."""
 
 from __future__ import annotations
 
@@ -68,4 +67,71 @@ def plot_importance(importance: pd.DataFrame, title: str, path: Path):
     ax.set(xlabel="Drop in test ROC-AUC when the feature is shuffled", title=title)
     _style(ax)
     ax.grid(axis="y", visible=False)
+    return _save(fig, path)
+
+
+def plot_variant_scores(summary: pd.DataFrame, metric: str, path: Path):
+    """Dot plot of each feature set's cross-validated score, one colour per model.
+
+    Whiskers show the standard deviation over the folds (how much the score moves between
+    folds), not a confidence interval for the difference; that is in the report table.
+    """
+    data = summary[summary["group"] != "ablation"]
+    variants = list(dict.fromkeys(data["variant"]))
+    models = list(dict.fromkeys(data["model"]))
+    fig, ax = plt.subplots(figsize=(7.5, 1.2 + 0.7 * len(variants)))
+    step = 0.22
+    for j, model in enumerate(models):
+        part = data[data["model"] == model].set_index("variant")
+        ys = [i + (j - (len(models) - 1) / 2) * step for i in range(len(variants))]
+        ax.errorbar(
+            part.loc[variants, f"{metric}_mean"], ys, xerr=part.loc[variants, f"{metric}_std"],
+            fmt="o", color=MODEL_COLOURS.get(model, INK), ecolor=MODEL_COLOURS.get(model, INK),
+            elinewidth=1.2, capsize=0, markersize=6, label=model,
+        )  # fmt: skip
+    labels = [f"{v} ({int(data[data['variant'] == v]['n_features'].iloc[0])})" for v in variants]
+    ax.set_yticks(range(len(variants)), labels)
+    ax.invert_yaxis()
+    ax.set(xlabel=f"CV {metric} (mean +/- std over folds)", title="Feature sets compared")
+    ax.legend(
+        frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.18), ncol=len(models)
+    )  # below the axis so it never covers a point
+    _style(ax)
+    ax.grid(axis="y", visible=False)
+    return _save(fig, path)
+
+
+def plot_ablation(summary: pd.DataFrame, metric: str, path: Path):
+    """One panel per model: change in the score when a single feature is removed.
+
+    Bars to the left of zero mean the model got worse without that feature (the feature
+    helps). Filled bars are statistically distinguishable from zero after Holm adjustment;
+    hollow bars are not. Whiskers are the 95% interval of the change.
+    """
+    data = summary[summary["group"] == "ablation"].copy()
+    data["feature"] = data["variant"].str.removeprefix("drop_")
+    models = list(dict.fromkeys(data["model"]))
+    order = data.groupby("feature")["mean_diff"].mean().sort_values().index.tolist()
+    fig, axes = plt.subplots(1, len(models), figsize=(4.2 * len(models) + 0.8, 5), sharey=True)
+    axes = np.atleast_1d(axes)
+    for ax, model in zip(axes, models, strict=True):
+        part = data[data["model"] == model].set_index("feature").loc[order]
+        colour = MODEL_COLOURS.get(model, INK)
+        significant = (part["p_holm"] < 0.05).to_numpy()
+        ax.barh(
+            order, part["mean_diff"], height=0.6,
+            color=[colour if s else "white" for s in significant], edgecolor=colour, linewidth=1.5,
+            xerr=[part["mean_diff"] - part["ci_low"], part["ci_high"] - part["mean_diff"]],
+            error_kw={"ecolor": MUTED, "elinewidth": 1},
+        )  # fmt: skip
+        ax.axvline(0, color=INK, linewidth=1)
+        ax.set(title=model, xlabel=f"change in CV {metric}")
+        _style(ax)
+        ax.grid(axis="y", visible=False)
+    axes[0].invert_yaxis()
+    fig.suptitle(
+        "Dropping one feature at a time (left of zero = worse without it; filled = significant)",
+        y=1.0, fontsize=10,
+    )  # fmt: skip
+    fig.tight_layout()
     return _save(fig, path)

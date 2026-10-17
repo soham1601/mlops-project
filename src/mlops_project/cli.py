@@ -1,12 +1,13 @@
 """
-    download    fetch the raw UCI data
-    preprocess  clean it and write data/processed/heart_clean.csv
-    eda         write the EDA figures and summary
-    profile     data-quality report for any CSV
-    train       train, tune and compare models; save the best
-    evaluate    score a saved model on any CSV
-    corrupt     write a deliberately messy copy of a CSV, for stress tests
-    all         download -> preprocess -> train
+download    fetch the raw UCI data
+preprocess  clean it and write data/processed/heart_clean.csv
+eda         write the EDA figures and summary
+profile     data-quality report for any CSV
+train       train, tune and compare models; save the best
+experiment  compare feature sets: in-fold selection, an engineered column, ablation
+evaluate    score a saved model on any CSV
+corrupt     write a deliberately messy copy of a CSV, for stress tests
+all         download -> preprocess -> train
 """
 
 from __future__ import annotations
@@ -58,6 +59,12 @@ def build_parser() -> argparse.ArgumentParser:
                 "--models", help="comma-separated subset, e.g. logistic_regression,xgboost"
             )
 
+    p = sub.add_parser("experiment", help="compare feature sets with paired statistics")
+    p.add_argument("--config", help="YAML settings file (see configs/)")
+    p.add_argument("--models", help="comma-separated subset, e.g. logistic_regression")
+    p.add_argument("--repeats", type=int, help="repeats of the k-fold CV (default: from config)")
+    p.add_argument("--no-ablation", action="store_true", help="skip the drop-one-feature runs")
+
     p = sub.add_parser("corrupt", help="write a deliberately messy copy of a CSV")
     p.add_argument("--data", required=True, help="clean CSV to damage")
     p.add_argument("--out", required=True, help="where to write the messy copy")
@@ -81,6 +88,10 @@ def _settings(args: argparse.Namespace) -> Settings:
         settings.data.target = args.target
     if getattr(args, "n_trials", None) is not None:
         settings.tuning.n_trials = args.n_trials
+    if getattr(args, "repeats", None) is not None:
+        settings.experiment.repeats = args.repeats
+    if getattr(args, "no_ablation", False):
+        settings.experiment.ablation = False
     if getattr(args, "models", None):
         settings.models = [m.strip() for m in args.models.split(",") if m.strip()]
     settings.validate()
@@ -93,6 +104,15 @@ def _train(args: argparse.Namespace) -> int:
     result = train.run(_settings(args))
     print(Path(result["report_dir"], "model_comparison.md").read_text(encoding="utf-8"))
     print(f"Best model: {result['best_model']}  ->  {result['model_path']}")
+    return 0
+
+
+def _experiment(args: argparse.Namespace) -> int:
+    from mlops_project import experiment
+
+    result = experiment.run(_settings(args))
+    print(Path(result["output_dir"], "feature_comparison.md").read_text(encoding="utf-8"))
+    print(f"Written to {result['output_dir']}")
     return 0
 
 
@@ -160,6 +180,8 @@ def main(argv: list[str] | None = None) -> int:
             return _profile(args)
         if args.command == "train":
             return _train(args)
+        if args.command == "experiment":
+            return _experiment(args)
         if args.command == "corrupt":
             return _corrupt(args)
         if args.command == "evaluate":

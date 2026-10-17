@@ -1,5 +1,4 @@
-"""Make a messy copy of a clean CSV, to test how the model copes with bad input.
-"""
+"""Make a messy copy of a clean CSV, to test how the model copes with bad input."""
 
 from __future__ import annotations
 

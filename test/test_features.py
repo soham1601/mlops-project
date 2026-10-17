@@ -4,7 +4,13 @@ import pytest
 from sklearn.linear_model import LogisticRegression
 
 from mlops_project.config import FEATURES
-from mlops_project.features import RawCleaner, build_pipeline, clean_features
+from mlops_project.features import (
+    AddEngineered,
+    RawCleaner,
+    TopKFeatures,
+    build_pipeline,
+    clean_features,
+)
 
 
 @pytest.fixture
@@ -120,3 +126,93 @@ def test_text_input_predicts_the_same_as_numeric_input(features, fitted):
     np.testing.assert_allclose(
         fitted.predict_proba(rows.astype(str)), fitted.predict_proba(rows), rtol=1e-9
     )
+
+
+# --- optional pipeline pieces used by the feature experiments --------------------------------
+
+
+def _signal_table(n: int = 300, seed: int = 0):
+    """Four columns where only cp and oldpeak determine the label."""
+    rng = np.random.default_rng(seed)
+    X = pd.DataFrame(
+        {
+            "age": rng.integers(30, 70, n).astype(float),
+            "cp": rng.integers(1, 5, n).astype(float),
+            "chol": rng.integers(150, 400, n).astype(float),
+            "oldpeak": rng.random(n) * 4,
+        }
+    )
+    y = ((X["cp"] == 4) | (X["oldpeak"] > 2.5)).astype(int)
+    return X, y
+
+
+def test_top_k_keeps_the_columns_that_carry_the_signal():
+    X, y = _signal_table()
+    selector = TopKFeatures(k=2).fit(X, y)
+    assert selector.selected_ == ["cp", "oldpeak"]
+    assert list(selector.transform(X).columns) == ["cp", "oldpeak"]
+
+
+def test_top_k_ranking_uses_only_the_rows_it_was_fitted_on(features, learnable_df):
+    """Inside cross-validation each fold must rank features on its own training rows."""
+    y = learnable_df["target"]
+    train = features.iloc[:160]
+    pipe = build_pipeline(LogisticRegression(max_iter=1000), top_k=6)
+    pipe.fit(train, y.iloc[:160])
+
+    cleaned_train, _ = clean_features(train)
+    expected = TopKFeatures(k=6).fit(cleaned_train, y.iloc[:160])
+    cleaned_all, _ = clean_features(features)
+    on_everything = TopKFeatures(k=6).fit(cleaned_all, y)
+
+    assert pipe.named_steps["select"].scores_ == expected.scores_
+    assert pipe.named_steps["select"].scores_ != on_everything.scores_
+
+
+def test_engineered_column_is_the_share_of_the_age_predicted_maximum_heart_rate():
+    rows = pd.DataFrame({"age": [50.0, np.nan], "thalach": [150.0, 140.0]})
+    out = AddEngineered().transform(rows)
+    assert out.loc[0, "hr_ratio"] == pytest.approx(150 / 170)
+    assert np.isnan(out.loc[1, "hr_ratio"])
+    assert "hr_ratio" not in rows.columns  # input untouched
+
+
+def test_default_pipeline_is_the_one_that_train_saves(features, learnable_df):
+    pipe = build_pipeline(LogisticRegression(max_iter=1000))
+    assert [name for name, _ in pipe.steps] == ["cleaner", "preprocess", "model"]
+
+
+def _output_names(pipe, features, y):
+    pipe.fit(features, y)
+    return list(pipe.named_steps["preprocess"].get_feature_names_out())
+
+
+def test_dropping_a_feature_removes_its_columns_from_the_model_input(features, learnable_df):
+    y = learnable_df["target"]
+    full = _output_names(build_pipeline(LogisticRegression(max_iter=1000)), features, y)
+    cut = _output_names(
+        build_pipeline(LogisticRegression(max_iter=1000), drop=["chol", "fbs"]), features, y
+    )
+    assert "num__chol" in full
+    assert not any(n.startswith(("num__chol", "cat__fbs")) for n in cut)
+    assert any(n.startswith("cat__fbs") for n in full)
+    assert len(cut) < len(full)
+
+
+def test_engineered_column_reaches_the_model(features, learnable_df):
+    names = _output_names(
+        build_pipeline(LogisticRegression(max_iter=1000), engineer=True),
+        features,
+        learnable_df["target"],
+    )
+    assert "num__hr_ratio" in names
+
+
+def test_top_k_pipeline_predicts_for_raw_text_rows(features, learnable_df):
+    pipe = build_pipeline(LogisticRegression(max_iter=1000), top_k=5)
+    pipe.fit(features, learnable_df["target"])
+    assert len(pipe.named_steps["select"].selected_) == 5
+    proba = pipe.predict_proba(features.iloc[:10].astype(str))[:, 1]
+    assert ((proba >= 0) & (proba <= 1)).all()
+    empty = pd.DataFrame([dict.fromkeys(FEATURES, "?")])
+    assert 0 <= pipe.predict_proba(empty)[0, 1] <= 1

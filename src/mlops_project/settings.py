@@ -1,5 +1,4 @@
-"""Run settings, read from a YAML file (see configs/) and validated.
-"""
+"""Run settings, read from a YAML file (see configs/) and validated."""
 
 from __future__ import annotations
 
@@ -8,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-from mlops_project.config import ROOT
+from mlops_project.config import FEATURES, ROOT
 from mlops_project.models import SPECS
 
 METRICS = ("roc_auc", "f1", "accuracy", "precision", "recall")
@@ -46,6 +45,17 @@ class OutputSettings:
 
 
 @dataclass
+class ExperimentSettings:
+    """Feature experiments (``python -m mlops_project experiment``)."""
+
+    repeats: int = 5  # repeats of the k-fold CV; folds x repeats scores per variant
+    top_k: list[int] = field(default_factory=lambda: [10, 8, 6])  # in-fold top-k selection
+    engineered: bool = True  # also test the extra hr_ratio column
+    ablation: bool = True  # also drop each feature in turn
+    output_dir: str = "reports/experiments"
+
+
+@dataclass
 class Settings:
     name: str = "cleveland"
     data: DataSettings = field(default_factory=DataSettings)
@@ -54,6 +64,7 @@ class Settings:
     tuning: TuningSettings = field(default_factory=TuningSettings)
     models: list[str] = field(default_factory=lambda: list(SPECS))
     output: OutputSettings = field(default_factory=OutputSettings)
+    experiment: ExperimentSettings = field(default_factory=ExperimentSettings)
 
     def validate(self) -> None:
         if not 0 < self.split.test_size < 1:
@@ -64,6 +75,11 @@ class Settings:
             raise ValueError("tuning.n_trials cannot be negative")
         if self.tuning.metric not in METRICS:
             raise ValueError(f"tuning.metric must be one of {METRICS}")
+        if self.experiment.repeats < 1:
+            raise ValueError("experiment.repeats must be at least 1")
+        n_features = len(FEATURES)
+        if any(not 1 <= k < n_features for k in self.experiment.top_k):
+            raise ValueError(f"experiment.top_k values must be between 1 and {n_features - 1}")
         unknown = [m for m in self.models if m not in SPECS]
         if unknown or not self.models:
             raise ValueError(
@@ -77,6 +93,7 @@ _SECTIONS = {
     "cv": CVSettings,
     "tuning": TuningSettings,
     "output": OutputSettings,
+    "experiment": ExperimentSettings,
 }
 
 

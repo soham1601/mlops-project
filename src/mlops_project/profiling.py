@@ -1,5 +1,4 @@
-"""Data-quality profile of a CSV: what is wrong with it, before any model sees it.
-"""
+"""Data-quality profile of a CSV: what is wrong with it, before any model sees it."""
 
 from __future__ import annotations
 

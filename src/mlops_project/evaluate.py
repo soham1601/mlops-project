@@ -1,5 +1,4 @@
-"""Score a saved model on any CSV from the Heart Disease family.
-"""
+"""Score a saved model on any CSV from the Heart Disease family."""
 
 from __future__ import annotations
 

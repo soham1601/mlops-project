@@ -1,3 +1,4 @@
+README.md
 pyproject.toml
 src/mlops_project/__init__.py
 src/mlops_project/__main__.py
@@ -6,6 +7,7 @@ src/mlops_project/config.py
 src/mlops_project/corrupt.py
 src/mlops_project/datasets.py
 src/mlops_project/evaluate.py
+src/mlops_project/experiment.py
 src/mlops_project/features.py
 src/mlops_project/models.py
 src/mlops_project/plots.py
@@ -25,6 +27,7 @@ test/test_datasets.py
 test/test_download.py
 test/test_eda.py
 test/test_evaluate.py
+test/test_experiment.py
 test/test_features.py
 test/test_preprocess.py
 test/test_profiling_and_corrupt.py

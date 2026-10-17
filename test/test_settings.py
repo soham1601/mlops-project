@@ -35,6 +35,10 @@ def test_yaml_values_override_the_defaults(tmp_path):
         "cv:\n  folds: 1\n",
         "tuning:\n  metric: mcc\n",
         "- just\n- a list\n",
+        "experiment:\n  repeats: 0\n",
+        "experiment:\n  top_k: [13]\n",  # must leave at least one feature out
+        "experiment:\n  top_k: [0]\n",
+        "experiment:\n  repeat: 3\n",  # typo inside the experiment section
     ],
 )
 def test_bad_settings_are_rejected(tmp_path, text):
