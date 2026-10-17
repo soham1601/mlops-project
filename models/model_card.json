@@ -1,0 +1,85 @@
+{
+  "name": "cleveland",
+  "trained_at": "2026-10-17T10:03:10+00:00",
+  "best_model": "xgboost",
+  "best_params": {
+    "n_estimators": 250,
+    "max_depth": 3,
+    "learning_rate": 0.06874099203168502,
+    "subsample": 0.6063382131333426,
+    "colsample_bytree": 0.6386247785524612,
+    "min_child_weight": 4
+  },
+  "selection_metric": "roc_auc",
+  "test_metrics": {
+    "accuracy": 0.8666666666666667,
+    "precision": 0.8846153846153846,
+    "recall": 0.8214285714285714,
+    "f1": 0.8518518518518519,
+    "roc_auc": 0.9285714285714286
+  },
+  "cv_metrics": {
+    "accuracy": {
+      "mean": 0.8184397163120567,
+      "std": 0.056733848502610894
+    },
+    "precision": {
+      "mean": 0.8266432748538012,
+      "std": 0.09013659501629044
+    },
+    "recall": {
+      "mean": 0.7874458874458875,
+      "std": 0.11482393270654799
+    },
+    "f1": {
+      "mean": 0.797522598085951,
+      "std": 0.06285976879431768
+    },
+    "roc_auc": {
+      "mean": 0.910035298035298,
+      "std": 0.05248613477509569
+    }
+  },
+  "features": [
+    "age",
+    "sex",
+    "cp",
+    "trestbps",
+    "chol",
+    "fbs",
+    "restecg",
+    "thalach",
+    "exang",
+    "oldpeak",
+    "slope",
+    "ca",
+    "thal"
+  ],
+  "data": {
+    "file": "heart_clean.csv",
+    "sha256": "111951559b9be9ac7429627cbee7ec15b8a7029a3dd759602d9ade1d76407e4b",
+    "target_column": "target",
+    "rows_read": 297,
+    "rows_dropped_no_label": 0,
+    "rows_used": 297,
+    "class_balance": {
+      "0": 160,
+      "1": 137
+    }
+  },
+  "split": {
+    "test_size": 0.2,
+    "seed": 42,
+    "train_rows": 237,
+    "test_rows": 60
+  },
+  "cv_folds": 5,
+  "optuna_trials": 30,
+  "versions": {
+    "python": "3.12.3",
+    "scikit-learn": "1.9.1",
+    "xgboost": "3.4.1",
+    "pandas": "3.0.6",
+    "numpy": "2.5.4"
+  }
+}
