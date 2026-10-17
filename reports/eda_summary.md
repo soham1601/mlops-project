@@ -1,4 +1,4 @@
-# EDA summary
+# EDA summary (auto-generated)
 
 - Rows: 297, columns: 14
 - Missing values: 0
@@ -21,6 +21,9 @@
 - trestbps: +0.153
 - chol: +0.080
 - fbs: +0.003
+
+Note: categorical codes (cp, thal, ...) are treated as numbers here, so these are
+rough indicators; the model pipeline one-hot encodes them properly.
 
 ## Outliers by the 1.5 x IQR rule (numeric features)
 - age: 0
