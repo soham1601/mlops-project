@@ -24,9 +24,6 @@ def exp_settings(tmp_path, data_path, **experiment_options) -> Settings:
     return settings
 
 
-# --- statistics ------------------------------------------------------------------------------
-
-
 def test_corrected_t_test_matches_the_formula():
     diffs = np.array([0.02, 0.01, 0.03, 0.00, 0.02, 0.04])
     ratio = 1 / 4
@@ -62,9 +59,6 @@ def test_holm_adjustment_keeps_order_and_never_exceeds_one():
     assert experiment.holm_adjust([0.6, 0.9]) == [1.0, 1.0]
 
 
-# --- which variants are tested ----------------------------------------------------------------
-
-
 def test_default_variants_are_baseline_selection_engineered_and_ablation(tmp_path):
     settings = Settings()
     settings.experiment.top_k = [10, 8, 6]
@@ -82,9 +76,6 @@ def test_variants_can_be_switched_off():
     settings.experiment.engineered = False
     settings.experiment.top_k = []
     assert [v.name for v in experiment.make_variants(settings)] == [experiment.BASELINE]
-
-
-# --- a complete run ---------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")

@@ -1,13 +1,4 @@
-"""Clean the raw dataset: binary target, missing values, type fixes and range validation.
-
-Missing values: the Cleveland data has 6 rows with a missing ``ca`` or ``thal``.
-  --missing drop  (default) removes those rows, so the cleaned CSV has no gaps.
-  --missing keep            leaves the gaps; the model pipeline then imputes them (Task 2).
-Either way the model pipeline keeps an imputer, so the API can handle incomplete requests.
-
-Usage:
-    python -m mlops_project.data.preprocess [--missing drop|keep]
-"""
+"""Clean the raw dataset: binary target, missing values, type fixes and range validation."""
 
 from __future__ import annotations
 

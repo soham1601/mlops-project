@@ -46,10 +46,7 @@ def check_columns(df: pd.DataFrame) -> None:
 
 
 def clean_features(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, Counter]]:
-    """Turn a raw feature table into clean floats, and count what had to be fixed.
-    Returns (cleaned DataFrame with exactly FEATURES columns, {column: Counter of fixes}).
-
-    """
+    """Turn a raw feature table into clean floats, and count what had to be fixed."""
     df = normalise_columns(df)
     check_columns(df)
 
@@ -101,12 +98,7 @@ ENGINEERED_NUMERIC = ["hr_ratio"]
 
 
 class AddEngineered(BaseEstimator, TransformerMixin):
-    """Adds ``hr_ratio``: the peak heart rate reached as a share of the age-predicted maximum.
-
-    ``hr_ratio = thalach / (220 - age)``. A lower share means the heart could not be pushed as
-    far, which is clinically meaningful and not a column the data already contains. A fixed
-    formula, so nothing is learned. Gaps stay NaN and are imputed in the next stage.
-    """
+    """Adds ``hr_ratio``: the peak heart rate reached as a share of the age-predicted maximum."""
 
     def fit(self, X, y=None):
         return self
@@ -118,13 +110,7 @@ class AddEngineered(BaseEstimator, TransformerMixin):
 
 
 class TopKFeatures(BaseEstimator, TransformerMixin):
-    """Keep the ``k`` original columns that share the most information with the label.
-
-    Ranking uses mutual information on the rows given to ``fit`` only. Placed inside the
-    pipeline, cross-validation therefore re-ranks on each training fold and never looks at the
-    validation rows, which avoids the classic mistake of choosing features on all the data and
-    then cross-validating. ``selected_`` records the choice, so its stability can be reported.
-    """
+    """Keep the ``k`` original columns that share the most information with the label."""
 
     def __init__(self, k: int = 10, seed: int = 42):
         self.k = k
@@ -148,11 +134,7 @@ class TopKFeatures(BaseEstimator, TransformerMixin):
 
 
 def build_preprocessor(drop=(), engineer: bool = False, dynamic: bool = False) -> ColumnTransformer:
-    """Impute and scale numeric columns; impute and one-hot encode categorical ones.
-
-    ``drop`` omits original features; ``engineer`` adds the ``hr_ratio`` column. With
-    ``dynamic=True`` the columns are whatever a previous selection step let through.
-    """
+    """Impute and scale numeric columns; impute and one-hot encode categorical ones."""
     numeric = Pipeline(
         [
             ("impute", SimpleImputer(strategy="median", keep_empty_features=True)),
@@ -186,12 +168,7 @@ def _present(wanted: list[str]):
 def build_pipeline(
     estimator, *, drop=(), top_k: int | None = None, engineer: bool = False, seed: int = 42
 ) -> Pipeline:
-    """The complete model: cleaner -> (optional steps) -> preprocessing -> classifier.
-
-    With no options this is exactly the model that ``train`` saves. The options exist for the
-    feature experiments: ``drop`` removes original features, ``engineer`` adds ``hr_ratio``,
-    and ``top_k`` keeps the k most informative columns, re-chosen on every training fold.
-    """
+    """The complete model: cleaner -> (optional steps) -> preprocessing -> classifier."""
     steps = [("cleaner", RawCleaner())]
     if engineer:
         steps.append(("engineer", AddEngineered()))

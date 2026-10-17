@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "heart-api.fullname" . }}
+  labels:
+    {{- include "heart-api.labels" . | nindent 4 }}
+    release: {{ .Values.monitoring.serviceMonitor.release }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "heart-api.selectorLabels" . | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.monitoring.serviceMonitor.interval }}
+{{- end }}

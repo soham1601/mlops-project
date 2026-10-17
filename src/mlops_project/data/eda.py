@@ -1,8 +1,4 @@
-"""Exploratory data analysis: saves figures to reports/figures and a text summary to reports/.
-
-Usage:
-    python -m mlops_project.data.eda
-"""
+"""Exploratory data analysis: saves figures to reports/figures and a text summary to reports/."""
 
 from __future__ import annotations
 

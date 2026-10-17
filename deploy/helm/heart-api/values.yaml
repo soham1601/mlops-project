@@ -1,0 +1,39 @@
+replicaCount: 2
+
+image:
+  repository: heart-api        # built locally for Minikube; use ghcr.io/<user>/<repo> for CI images
+  tag: latest
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []           # only needed to pull a private image from GHCR
+
+service:
+  type: LoadBalancer           # Minikube: run `minikube tunnel`, or `minikube service heart-api --url`
+  port: 80
+
+ingress:
+  enabled: false               # needs the ingress addon: minikube addons enable ingress
+  className: nginx
+  host: heart-api.local
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 768Mi
+
+autoscaling:                   # needs metrics-server: minikube addons enable metrics-server
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 4
+  cpuUtilization: 70
+
+monitoring:
+  serviceMonitor:
+    enabled: false             # true once kube-prometheus-stack is installed
+    interval: 15s
+    release: monitoring        # must match the Helm release name of kube-prometheus-stack
+  dashboard:
+    enabled: false             # Grafana picks the dashboard up through its sidecar

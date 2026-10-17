@@ -1,15 +1,4 @@
-"""Download the UCI Heart Disease (Cleveland) dataset and save it as a raw CSV.
-
-Three sources are supported, tried in this order when ``--source auto`` (the default):
-
-1. ``ucimlrepo``  - the official UCI Python package (dataset id 45).
-2. ``url``        - the plain ``processed.cleveland.data`` file on the UCI archive.
-3. ``file``       - a local copy you downloaded manually (``--source file --file PATH``).
-
-Usage:
-    python -m mlops_project.data.download
-    python -m mlops_project.data.download --source file --file ~/Downloads/processed.cleveland.data
-"""
+"""Download the UCI Heart Disease (Cleveland) dataset and save it as a raw CSV."""
 
 from __future__ import annotations
 

@@ -8,10 +8,14 @@ seaborn>=0.13
 # Hyper-parameter tuning (training only; not needed by the API image)
 optuna>=3.6
 
+# Experiment tracking and model registry
+mlflow>=3.1
+
 # Notebooks
 jupyterlab>=4.0
 
 # Testing and code quality
 pytest>=8.0
+httpx>=0.27  # FastAPI test client
 pytest-cov>=5.0
 ruff>=0.5

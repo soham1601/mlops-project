@@ -13,7 +13,6 @@ PROCESSED_PATH = ROOT / "data" / "processed" / "heart_clean.csv"
 REPORTS_DIR = ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
-# --- Columns -----------------------------------------------------------------------------
 NUMERIC_FEATURES = ["age", "trestbps", "chol", "thalach", "oldpeak"]
 CATEGORICAL_FEATURES = ["sex", "cp", "fbs", "restecg", "exang", "slope", "ca", "thal"]
 FEATURES = ["age", "sex", "cp", "trestbps", "chol", "fbs", "restecg", "thalach", "exang",
@@ -23,7 +22,6 @@ RAW_TARGET = "num"  # 0 = no disease, 1-4 = disease severity
 TARGET = "target"  # binary: 0 = no disease, 1 = disease
 TARGET_LABELS = {0: "No disease", 1: "Disease"}
 
-# --- Data dictionary (from the UCI documentation) ---------------------------------------
 DESCRIPTIONS = {
     "age": "Age (years)",
     "sex": "Sex (1 = male, 0 = female)",
@@ -40,7 +38,6 @@ DESCRIPTIONS = {
     "thal": "Thalassemia (3 normal, 6 fixed defect, 7 reversible defect)",
 }
 
-# --- Validation rules (used by preprocess.validate) -------------------------------------
 VALID_RANGES = {
     "age": (18, 100),
     "trestbps": (60, 250),

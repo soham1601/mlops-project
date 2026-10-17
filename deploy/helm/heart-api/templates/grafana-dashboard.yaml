@@ -1,0 +1,12 @@
+{{- if .Values.monitoring.dashboard.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "heart-api.fullname" . }}-dashboard
+  labels:
+    {{- include "heart-api.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  heart-api-dashboard.json: |-
+{{ .Files.Get "files/grafana-dashboard.json" | indent 4 }}
+{{- end }}

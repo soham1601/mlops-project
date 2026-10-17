@@ -1,0 +1,6 @@
+Heart disease API deployed as release "{{ .Release.Name }}".
+
+Open it (Minikube):
+  minikube service {{ include "heart-api.fullname" . }} --url
+then browse to <url>/docs, or:
+  curl <url>/health

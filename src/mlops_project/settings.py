@@ -56,6 +56,15 @@ class ExperimentSettings:
 
 
 @dataclass
+class TrackingSettings:
+    enabled: bool = False  # the shipped config turns this on
+    db: str = "mlflow.db"  # SQLite file holding runs and the model registry
+    artifact_dir: str = "mlruns"  # plots, reports and model files of every run
+    experiment: str = "heart-disease"
+    model_name: str = "heart-disease-classifier"  # name in the MLflow model registry
+
+
+@dataclass
 class Settings:
     name: str = "cleveland"
     data: DataSettings = field(default_factory=DataSettings)
@@ -65,6 +74,7 @@ class Settings:
     models: list[str] = field(default_factory=lambda: list(SPECS))
     output: OutputSettings = field(default_factory=OutputSettings)
     experiment: ExperimentSettings = field(default_factory=ExperimentSettings)
+    tracking: TrackingSettings = field(default_factory=TrackingSettings)
 
     def validate(self) -> None:
         if not 0 < self.split.test_size < 1:
@@ -94,6 +104,7 @@ _SECTIONS = {
     "tuning": TuningSettings,
     "output": OutputSettings,
     "experiment": ExperimentSettings,
+    "tracking": TrackingSettings,
 }
 
 

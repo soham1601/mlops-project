@@ -1,14 +1,4 @@
-"""Train, tune and compare the candidate models; save the best one.
-
-Procedure:
-  1. Stratified train/test split.
-  2. For each model: 5-fold stratified cross-validation with default parameters (baseline).
-  3. Optuna searches the model's parameters, maximising cross-validated ROC-AUC. The default
-     parameters are the first trial, so tuning can never end up worse than the baseline.
-  4. The tuned model is cross-validated again (all five metrics) and then scored on the test set.
-  5. The best model by CROSS-VALIDATED score (never by test score) is saved as one joblib file
-     containing the whole pipeline, together with a model card describing how it was made.
-"""
+"""Train, tune and compare the candidate models; save the best one."""
 
 from __future__ import annotations
 
@@ -41,6 +31,7 @@ from mlops_project.evaluate import METRIC_NAMES, score
 from mlops_project.features import build_pipeline
 from mlops_project.models import SPECS
 from mlops_project.settings import Settings, resolve
+from mlops_project.tracking import Tracker, make_tracker
 
 log = logging.getLogger(__name__)
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -94,6 +85,14 @@ def _check_enough_data(y_train: pd.Series, folds: int) -> None:
 
 def run(settings: Settings) -> dict:
     """Run the whole training procedure and return a summary dict (also written to disk)."""
+    tracker = make_tracker(settings)
+    with tracker.run(f"train-{settings.name}"):
+        result = _train(settings, tracker)
+        tracker.log_training(result, settings)
+    return result
+
+
+def _train(settings: Settings, tracker: Tracker) -> dict:
     data_path = resolve(settings.data.path)
     report_dir = resolve(settings.output.report_dir)
     model_path = resolve(settings.output.model_path)
@@ -124,48 +123,52 @@ def run(settings: Settings) -> dict:
     probas: dict[str, np.ndarray] = {}
 
     for name in settings.models:
-        spec = SPECS[name]
-        log.info("[%s] baseline cross-validation", name)
-        baseline = cv_summary(build_pipeline(spec.build(spec.defaults)), X_train, y_train, settings)
-
-        params, trials = spec.defaults, 0
-        if settings.tuning.n_trials > 0:
-            log.info(
-                "[%s] Optuna: %d trials, maximising %s", name, settings.tuning.n_trials, metric
+        with tracker.run(name, nested=True):
+            spec = SPECS[name]
+            log.info("[%s] baseline cross-validation", name)
+            baseline = cv_summary(
+                build_pipeline(spec.build(spec.defaults)), X_train, y_train, settings
             )
-            study = tune(spec, X_train, y_train, settings)
-            params, trials = study.best_params, len(study.trials)
-            study.trials_dataframe().to_csv(report_dir / f"optuna_trials_{name}.csv", index=False)
 
-        pipeline = build_pipeline(spec.build(params))
-        tuned = cv_summary(pipeline, X_train, y_train, settings)
-        pipeline.fit(X_train, y_train)
-        proba = pipeline.predict_proba(X_test)[:, 1]
-        test_metrics, cm = score(y_test, proba)
+            params, trials, trials_df = spec.defaults, 0, None
+            if settings.tuning.n_trials > 0:
+                log.info(
+                    "[%s] Optuna: %d trials, maximising %s", name, settings.tuning.n_trials, metric
+                )
+                study = tune(spec, X_train, y_train, settings)
+                params, trials = study.best_params, len(study.trials)
+                trials_df = study.trials_dataframe()
+                trials_df.to_csv(report_dir / f"optuna_trials_{name}.csv", index=False)
 
-        fitted[name], probas[name] = pipeline, proba
-        results[name] = {
-            "best_params": params,
-            "optuna_trials": trials,
-            "cv_baseline": baseline,
-            "cv_tuned": tuned,
-            "test_metrics": test_metrics,
-            "test_confusion_matrix": cm,
-        }
-        log.info(
-            "[%s] CV %s %.3f -> %.3f | test %s %.3f",
-            name,
-            metric,
-            baseline[metric]["mean"],
-            tuned[metric]["mean"],
-            metric,
-            test_metrics[metric],
-        )  # fmt: skip
+            pipeline = build_pipeline(spec.build(params))
+            tuned = cv_summary(pipeline, X_train, y_train, settings)
+            pipeline.fit(X_train, y_train)
+            proba = pipeline.predict_proba(X_test)[:, 1]
+            test_metrics, cm = score(y_test, proba)
+
+            fitted[name], probas[name] = pipeline, proba
+            results[name] = {
+                "best_params": params,
+                "optuna_trials": trials,
+                "cv_baseline": baseline,
+                "cv_tuned": tuned,
+                "test_metrics": test_metrics,
+                "test_confusion_matrix": cm,
+            }
+            tracker.log_candidate(name, results[name], trials_df)
+            log.info(
+                "[%s] CV %s %.3f -> %.3f | test %s %.3f",
+                name,
+                metric,
+                baseline[metric]["mean"],
+                tuned[metric]["mean"],
+                metric,
+                test_metrics[metric],
+            )  # fmt: skip
 
     best = max(results, key=lambda n: results[n]["cv_tuned"][metric]["mean"])
     log.info("Best model by cross-validated %s: %s", metric, best)
 
-    # --- artefacts -------------------------------------------------------------------------
     model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(fitted[best], model_path)
 

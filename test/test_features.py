@@ -89,9 +89,6 @@ def test_the_cleaner_stage_works_inside_sklearn(features):
     assert cleaner.transform(features).shape == features.shape
 
 
-# --- the complete pipeline ---------------------------------------------------------------
-
-
 @pytest.fixture
 def fitted(learnable_df):
     train = learnable_df.iloc[:160]
@@ -126,9 +123,6 @@ def test_text_input_predicts_the_same_as_numeric_input(features, fitted):
     np.testing.assert_allclose(
         fitted.predict_proba(rows.astype(str)), fitted.predict_proba(rows), rtol=1e-9
     )
-
-
-# --- optional pipeline pieces used by the feature experiments --------------------------------
 
 
 def _signal_table(n: int = 300, seed: int = 0):

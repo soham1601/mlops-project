@@ -35,9 +35,6 @@ def test_profile_text_report_has_a_row_per_feature(learnable_df):
     assert "Verdict: READY" in text
 
 
-# --- corrupt ---------------------------------------------------------------------------------
-
-
 def test_corrupt_never_touches_the_target(learnable_df):
     messy, _ = corrupt(learnable_df, rate=0.5, seed=0)
     assert (messy["target"].astype(int) == learnable_df["target"]).all()

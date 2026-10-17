@@ -53,11 +53,7 @@ def read_table(
 
 
 def split_xy(df: pd.DataFrame, target: str = "target") -> tuple[pd.DataFrame, pd.Series, dict]:
-    """Separate features from the label and turn the label into 0/1.
-
-    Uses ``target`` if present, otherwise the raw UCI column ``num``. Any value above 0
-    means disease. Rows with an unreadable label are dropped and counted in the info dict.
-    """
+    """Separate features from the label and turn the label into 0/1."""
     df = normalise_columns(df)
     target = target.strip().lower()
     source = next((c for c in (target, RAW_TARGET) if c in df.columns), None)

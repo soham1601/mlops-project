@@ -71,11 +71,7 @@ def plot_importance(importance: pd.DataFrame, title: str, path: Path):
 
 
 def plot_variant_scores(summary: pd.DataFrame, metric: str, path: Path):
-    """Dot plot of each feature set's cross-validated score, one colour per model.
-
-    Whiskers show the standard deviation over the folds (how much the score moves between
-    folds), not a confidence interval for the difference; that is in the report table.
-    """
+    """Dot plot of each feature set's cross-validated score, one colour per model."""
     data = summary[summary["group"] != "ablation"]
     variants = list(dict.fromkeys(data["variant"]))
     models = list(dict.fromkeys(data["model"]))
@@ -102,12 +98,7 @@ def plot_variant_scores(summary: pd.DataFrame, metric: str, path: Path):
 
 
 def plot_ablation(summary: pd.DataFrame, metric: str, path: Path):
-    """One panel per model: change in the score when a single feature is removed.
-
-    Bars to the left of zero mean the model got worse without that feature (the feature
-    helps). Filled bars are statistically distinguishable from zero after Holm adjustment;
-    hollow bars are not. Whiskers are the 95% interval of the change.
-    """
+    """One panel per model: change in the score when a single feature is removed."""
     data = summary[summary["group"] == "ablation"].copy()
     data["feature"] = data["variant"].str.removeprefix("drop_")
     models = list(dict.fromkeys(data["model"]))

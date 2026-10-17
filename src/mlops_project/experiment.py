@@ -1,28 +1,4 @@
-"""Feature experiments: does a smaller or richer feature set change the cross-validated score?
-
-Usage:
-    python -m mlops_project experiment --config configs/cleveland.yaml
-
-What it compares (each against the baseline that uses all 13 features):
-  * selection   - keep only the k most informative features, re-chosen inside every fold
-  * engineered  - add one new column, hr_ratio = thalach / (220 - age)
-  * ablation    - drop each feature in turn, to see which ones the model really needs
-
-How the comparison is kept fair:
-  * Only the TRAINING split is used. The held-out test rows are never touched here, so the
-    test score you report for the final model stays an honest, one-time estimate.
-  * Every variant and model sees exactly the same folds: stratified k-fold repeated several
-    times, so each variant gets folds x repeats paired scores.
-  * Feature selection happens inside the pipeline, on each fold's training rows only.
-  * Models use their default parameters, so a difference comes from the features and not from
-    different tuning effort.
-  * Differences are tested with the Nadeau-Bengio corrected resampled t-test. Plain paired
-    t-tests are over-confident here because the folds share training rows. P-values are then
-    adjusted with Holm's method, because many variants are compared at once.
-
-With a few hundred patients most differences will NOT be significant. That is a finding, not a
-failure: it means the data cannot tell the feature sets apart, so the simpler set is preferred.
-"""
+"""Feature experiments: does a smaller or richer feature set change the cross-validated score?"""
 
 from __future__ import annotations
 
@@ -43,6 +19,7 @@ from mlops_project.evaluate import METRIC_NAMES
 from mlops_project.features import build_pipeline
 from mlops_project.models import SPECS
 from mlops_project.settings import Settings, resolve
+from mlops_project.tracking import make_tracker
 
 log = logging.getLogger(__name__)
 
@@ -74,17 +51,8 @@ def make_variants(settings: Settings) -> list[Variant]:
     return variants
 
 
-# --- statistics ----------------------------------------------------------------------------
-
-
 def corrected_paired_ttest(diffs, ratio: float) -> dict:
-    """Nadeau-Bengio corrected resampled t-test on paired score differences.
-
-    ``diffs`` are variant-minus-baseline scores over the resamples. ``ratio`` is the size of
-    a validation fold divided by the size of its training part (1 / (folds - 1) for k-fold).
-    The correction widens the variance to account for folds that overlap, so p-values are not
-    over-optimistic. Returns the mean difference, its standard error, a 95% interval and p.
-    """
+    """Nadeau-Bengio corrected resampled t-test on paired score differences."""
     d = np.asarray(diffs, dtype=float)
     j = len(d)
     if j < 2:
@@ -118,9 +86,6 @@ def verdict(row: dict, baseline_n: int) -> str:
     if row["p_holm"] < ALPHA:
         return "better" if row["mean_diff"] > 0 else "worse"
     return "no detectable difference" + (" (simpler)" if row["n_features"] < baseline_n else "")
-
-
-# --- the experiment --------------------------------------------------------------------------
 
 
 def run(settings: Settings) -> dict:
@@ -217,8 +182,12 @@ def run(settings: Settings) -> dict:
         _markdown(report, summary, selection_df), encoding="utf-8"
     )
     log.info("Wrote %s", out_dir)
-    return {**report, "output_dir": str(out_dir), "figures": [str(f) for f in figures],
-            "selection": selection_df}  # fmt: skip
+    result = {**report, "output_dir": str(out_dir), "figures": [str(f) for f in figures],
+              "selection": selection_df}  # fmt: skip
+    tracker = make_tracker(settings)
+    with tracker.run(f"features-{settings.name}"):
+        tracker.log_feature_experiment(result, summary, settings)
+    return result
 
 
 def _summarise(settings, variants, scores, ratio) -> pd.DataFrame:
@@ -251,9 +220,6 @@ def _summarise(settings, variants, scores, ratio) -> pd.DataFrame:
             r["verdict"] = verdict(r, base_n)
         rows += model_rows
     return pd.DataFrame(rows)
-
-
-# --- report text -----------------------------------------------------------------------------
 
 
 def _signed(value: float) -> str:

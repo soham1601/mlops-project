@@ -1,14 +1,4 @@
-"""
-download    fetch the raw UCI data
-preprocess  clean it and write data/processed/heart_clean.csv
-eda         write the EDA figures and summary
-profile     data-quality report for any CSV
-train       train, tune and compare models; save the best
-experiment  compare feature sets: in-fold selection, an engineered column, ablation
-evaluate    score a saved model on any CSV
-corrupt     write a deliberately messy copy of a CSV, for stress tests
-all         download -> preprocess -> train
-"""
+"""Command-line entry point: python -m mlops_project <command>."""
 
 from __future__ import annotations
 
@@ -52,6 +42,7 @@ def build_parser() -> argparse.ArgumentParser:
         p = sub.add_parser(name, help=help_text)
         p.add_argument("--config", help="YAML settings file (see configs/)")
         p.add_argument("--n-trials", type=int, help="Optuna trials per model (0 = no tuning)")
+        p.add_argument("--no-tracking", action="store_true", help="do not log to MLflow")
         if name == "train":
             p.add_argument("--data", help="train on this CSV instead of the one in the config")
             p.add_argument("--target", help="target column name")
@@ -64,6 +55,23 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--models", help="comma-separated subset, e.g. logistic_regression")
     p.add_argument("--repeats", type=int, help="repeats of the k-fold CV (default: from config)")
     p.add_argument("--no-ablation", action="store_true", help="skip the drop-one-feature runs")
+    p.add_argument("--no-tracking", action="store_true", help="do not log to MLflow")
+
+    p = sub.add_parser("ui", help="open the MLflow tracking UI")
+    p.add_argument("--config", help="YAML settings file (see configs/)")
+    p.add_argument("--port", type=int, default=5000)
+
+    p = sub.add_parser("predict", help="predict for one or more patients")
+    p.add_argument(
+        "--model",
+        default=str(resolve("models/model.joblib")),
+        help="model file, or an MLflow URI like models:/heart-disease-classifier@champion",
+    )
+    p.add_argument("--config", help="YAML settings file (needed for registry URIs)")
+    group = p.add_mutually_exclusive_group(required=True)
+    group.add_argument("--json", help="one patient as JSON, e.g. '{\"age\": 63, ...}'")
+    group.add_argument("--file", help="JSON file with one patient or a list of patients")
+    group.add_argument("--sample", action="store_true", help="use a built-in sample patient")
 
     p = sub.add_parser("corrupt", help="write a deliberately messy copy of a CSV")
     p.add_argument("--data", required=True, help="clean CSV to damage")
@@ -90,6 +98,8 @@ def _settings(args: argparse.Namespace) -> Settings:
         settings.tuning.n_trials = args.n_trials
     if getattr(args, "repeats", None) is not None:
         settings.experiment.repeats = args.repeats
+    if getattr(args, "no_tracking", False):
+        settings.tracking.enabled = False
     if getattr(args, "no_ablation", False):
         settings.experiment.ablation = False
     if getattr(args, "models", None):
@@ -116,6 +126,17 @@ def _experiment(args: argparse.Namespace) -> int:
     return 0
 
 
+def _ui(args: argparse.Namespace) -> int:
+    import subprocess
+
+    from mlops_project.tracking import tracking_uri
+
+    cfg = _settings(args).tracking
+    print(f"MLflow UI on http://localhost:{args.port}  (Ctrl+C to stop)")
+    command = [sys.executable, "-m", "mlflow", "ui", "--backend-store-uri", tracking_uri(cfg)]
+    return subprocess.call([*command, "--port", str(args.port)])
+
+
 def _evaluate(args: argparse.Namespace) -> int:
     from mlops_project.evaluate import evaluate, format_result
 
@@ -127,6 +148,21 @@ def _evaluate(args: argparse.Namespace) -> int:
     print(format_result(result))
     if args.json:
         Path(args.json).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    return 0
+
+
+def _predict(args: argparse.Namespace) -> int:
+    from mlops_project.predict import SAMPLE_PATIENT, load_model, predict_records
+    from mlops_project.tracking import tracking_uri
+
+    if args.sample:
+        records = [SAMPLE_PATIENT]
+    else:
+        text = args.json if args.json else Path(args.file).read_text(encoding="utf-8")
+        data = json.loads(text)
+        records = data if isinstance(data, list) else [data]
+    model = load_model(args.model, tracking_uri(_settings(args).tracking))
+    print(json.dumps(predict_records(model, records), indent=2))
     return 0
 
 
@@ -182,6 +218,10 @@ def main(argv: list[str] | None = None) -> int:
             return _train(args)
         if args.command == "experiment":
             return _experiment(args)
+        if args.command == "predict":
+            return _predict(args)
+        if args.command == "ui":
+            return _ui(args)
         if args.command == "corrupt":
             return _corrupt(args)
         if args.command == "evaluate":
