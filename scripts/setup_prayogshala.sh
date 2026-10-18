@@ -2,6 +2,7 @@
 # Prayogshala Rocky Linux one-command setup
 # Safe to rerun on any fresh VM (idempotent)
 # Installs system tools + Python env + project, so `make train` works
+# Logs go to logs/ inside the project (once it is cloned)
 set -e
 
 echo "=== 1. system packages ==="
@@ -41,6 +42,7 @@ if [ ! -d mlops-project ]; then
   git clone https://github.com/soham1601/mlops-project.git
 fi
 cd mlops-project
+mkdir -p logs
 
 echo "=== 6. python venv + deps + project ==="
 # Fix: lockfile needs Python 3.12 (numpy 2.5.4). Rebuild venv if broken.
@@ -75,3 +77,5 @@ echo "Next:"
 echo "  cd ~/workspace/mlops-project && source .venv/bin/activate"
 echo "  make train              # train + log to MLflow (needs tracking: enabled: true in configs/cleveland.yaml)"
 echo "  bash scripts/deploy_prayogshala.sh    # start minikube + deploy from GHCR"
+echo
+echo "Logs: ~/workspace/mlops-project/logs/"

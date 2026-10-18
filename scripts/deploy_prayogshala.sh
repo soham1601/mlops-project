@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 # Prayogshala deploy: start minikube, install kube-prometheus-stack, deploy heart-api from GHCR
 # Safe to rerun (uses helm upgrade --install, kubectl create ... || true)
+# Logs go to logs/ inside the project.
 set -e
+
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LOG_DIR="$REPO_ROOT/logs"
+mkdir -p "$LOG_DIR"
+TS=$(date +%Y%m%d_%H%M%S)
+LOG="$LOG_DIR/deploy_$TS.log"
+exec > >(tee "$LOG") 2>&1
+echo "Logging to $LOG"
 
 CLUSTER_CPUS=${CLUSTER_CPUS:-2}
 CLUSTER_MEM=${CLUSTER_MEM:-4096}
@@ -29,7 +38,7 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
 
 echo
 echo "=== 3. heart-api from GHCR ==="
-cd "$(dirname "$0")/.."     # repo root
+cd "$REPO_ROOT"
 helm upgrade --install heart-api ./deploy/helm/heart-api \
   --set monitoring.serviceMonitor.enabled=true \
   --set monitoring.dashboard.enabled=true \
@@ -68,3 +77,4 @@ echo "=== DONE ==="
 echo "  API:        kubectl port-forward svc/heart-api 8080:80  &  curl http://localhost:8080/ready"
 echo "  Prometheus: http://localhost:9090"
 echo "  Grafana:    http://localhost:3000   (admin / $GRAFANA_PASS)"
+echo "  Log:        $LOG"
