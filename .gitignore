@@ -14,6 +14,10 @@ htmlcov/
 mlruns/
 mlflow.db
 
+# Trained model files are rebuilt by `make train` (CI builds the one that ships in the image)
+models/*
+!models/.gitkeep
+
 # Raw download can always be re-created with `make data`
 data/raw/*.csv
 data/raw/*.data
@@ -22,7 +26,3 @@ data/raw/*.data
 .DS_Store
 .idea/
 .vscode/
-
-# Trained model files are rebuilt by `make train`
-models/*
-!models/.gitkeep
