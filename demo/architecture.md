@@ -1,33 +1,6 @@
 # Architecture
 
-```mermaid
-flowchart LR
-  subgraph Build[1  Build the model]
-    direction LR
-    UCI[UCI data<br/>download.py] --> CLEAN[Clean, EDA<br/>preprocess.py] --> TRAIN[Train, tune<br/>3 models, CV] --> MODEL[Model files<br/>joblib + card]
-    MODEL --> MLFLOW[MLflow<br/>registry]
-  end
-
-  subgraph CI[2  Automate every push]
-    direction LR
-    PUSH[git push<br/>to GitHub] --> LINT[lint<br/>ruff] --> TEST[test<br/>150 pytest] --> CITRAIN[train<br/>10 trials] --> DOCKER[docker<br/>build + push]
-  end
-
-  subgraph Serve[3  Serve and deploy]
-    direction LR
-    IMG[Image<br/>FastAPI+model] --> HELM[Helm chart<br/>deploy/helm] --> K8S[Kubernetes<br/>2 replicas]
-    K8S --> SVC[Service<br/>LoadBalancer] --> CLIENT[Client<br/>POST /predict]
-  end
-
-  subgraph Obs[4  Observe]
-    direction LR
-    LOGS[Logs<br/>JSON lines] --> METRICS[Metrics<br/>/metrics] --> PROM[Prometheus<br/>scrape 15 s] --> GRAFANA[Grafana<br/>9 panels]
-  end
-
-  DOCKER -. image to GHCR, pulled by Minikube .-> IMG
-  K8S --> LOGS
-  K8S --> METRICS
-```
+![End-to-end MLOps architecture: build, automate, serve, observe](../docs/architecture.svg)
 
 ## Components
 

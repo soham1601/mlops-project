@@ -30,6 +30,14 @@ bash scripts/smoke_test.sh
 bash scripts/deploy_prayogshala.sh
 ```
 
+## Architecture
+
+![End-to-end MLOps architecture: build, automate, serve, observe](docs/architecture.svg)
+
+**Four stages.** The model is built once per training run and recorded in MLflow. Every git push runs the CI pipeline, which builds a container and ships it to GitHub Container Registry. Helm deploys it to Minikube behind a LoadBalancer. Pods emit JSON logs and Prometheus metrics; Grafana dashboards both.
+
+See `demo/architecture.md` for a component table and a diagram-node to source-file mapping.
+
 ## Scripts
 
 | Script | What it does | Time |

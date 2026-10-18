@@ -26,3 +26,4 @@ data/raw/*.data
 .DS_Store
 .idea/
 .vscode/
+demo/video_script.md
