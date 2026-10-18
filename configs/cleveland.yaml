@@ -31,3 +31,10 @@ experiment:           # python -m mlops_project experiment --config configs/clev
   engineered: true    # also test the extra hr_ratio column
   ablation: true      # also drop each of the 13 features in turn
   output_dir: reports/experiments
+
+tracking:             # MLflow: view with  python -m mlops_project ui
+  enabled: true
+  db: mlflow.db       # runs and model registry (git-ignored)
+  artifact_dir: mlruns
+  experiment: heart-disease
+  model_name: heart-disease-classifier
